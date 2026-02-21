@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Imposter!</title>
+<meta name="description" content="A fun pass-the-phone party game. Find the imposter!">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Imposter!">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiSW1wb3N0ZXIhIiwic2hvcnRfbmFtZSI6IkltcG9zdGVyISIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjMWExYTJlIiwidGhlbWVfY29sb3IiOiIjMWExYTJlIiwiaWNvbnMiOlt7InNyYyI6ImRhdGE6aW1hZ2Uvc3ZnK3htbCw8c3ZnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zycgdmlld0JveD0nMCAwIDEwMCAxMDAnPjxyZWN0IHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJyByeD0nMjAnIGZpbGw9JyMxYTFhMmUnLz48dGV4dCB4PSc1MCcgeT0nNjUnIGZvbnQtc2l6ZT0nNTAnIHRleHQtYW5jaG9yPSdtaWRkbGUnPvCflY08L3RleHQ+PC9zdmc+Iiwic2l6ZXMiOiIxOTJ4MTkyIiwidHlwZSI6ImltYWdlL3N2Zyt4bWwifV19">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --card: #0f3460;
+  --accent: #e94560;
+  --green: #2ecc71;
+  --text: #f0f0f0;
+  --text-dim: #a0a0b0;
+  --radius: 16px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg2) 100%);
+  color: var(--text);
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: calc(20px + var(--safe-top)) 20px calc(20px + var(--safe-bottom));
+}
+
+/* Screens */
+.screen {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  animation: fadeIn 0.3s ease;
+}
+.screen.active { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography */
+h1 { font-size: 2rem; text-align: center; margin-bottom: 8px; }
+h2 { font-size: 1.4rem; text-align: center; color: var(--text-dim); margin-bottom: 24px; font-weight: 400; }
+.emoji-title { font-size: 3rem; text-align: center; margin-bottom: 4px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  min-height: 52px;
+  width: 100%;
+  color: #fff;
+}
+.btn:active { transform: scale(0.96); opacity: 0.9; }
+.btn-primary { background: var(--accent); }
+.btn-green { background: var(--green); }
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--text-dim);
+  color: var(--text-dim);
+}
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+/* Setup screen */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 1rem; }
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stepper button:active { background: var(--accent); color: #fff; }
+.stepper span { font-size: 1.3rem; font-weight: 700; min-width: 28px; text-align: center; }
+
+/* Category grid */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+  max-height: 260px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px;
+}
+.cat-card {
+  background: var(--card);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 12px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  font-size: 0.85rem;
+}
+.cat-card .cat-emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+.cat-card.selected { border-color: var(--accent); transform: scale(1.04); }
+.cat-card:active { transform: scale(0.95); }
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 52px;
+  height: 30px;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle .slider {
+  position: absolute;
+  inset: 0;
+  background: #444;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.toggle .slider::before {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+.toggle input:checked + .slider { background: var(--green); }
+.toggle input:checked + .slider::before { transform: translateX(22px); }
+
+/* Reveal screen */
+.reveal-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+.player-badge {
+  background: var(--card);
+  padding: 10px 28px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--text-dim);
+}
+.tap-prompt {
+  font-size: 1.2rem;
+  color: var(--text-dim);
+  margin-top: 16px;
+}
+.role-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 340px;
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.role-card.imposter { border: 3px solid var(--accent); }
+.role-card.normal { border: 3px solid var(--green); }
+.role-label { font-size: 1.6rem; font-weight: 800; margin-bottom: 8px; }
+.role-label.red { color: var(--accent); }
+.role-label.green { color: var(--green); }
+.secret-word { font-size: 2rem; font-weight: 700; margin: 12px 0; }
+.hint-text { color: var(--text-dim); font-size: 0.95rem; margin-top: 8px; }
+
+/* Discussion screen */
+.timer-ring {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 16px;
+  position: relative;
+}
+.timer-ring svg { transform: rotate(-90deg); }
+.timer-ring circle {
+  fill: none;
+  stroke-width: 6;
+  cx: 50;
+  cy: 50;
+  r: 44;
+}
+.timer-ring .track { stroke: rgba(255,255,255,0.1); }
+.timer-ring .progress { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.timer-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.discussion-info {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 20px;
+  padding: 0 8px;
+}
+.btn-group { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
+
+/* Result overlay */
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 32px;
+  animation: fadeIn 0.3s ease;
+}
+.result-overlay.active { display: flex; }
+.result-emoji { font-size: 4rem; margin-bottom: 12px; }
+.result-text { font-size: 1.2rem; color: var(--text-dim); margin-bottom: 4px; }
+.result-player { font-size: 2rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+.result-word-label { font-size: 1rem; color: var(--text-dim); }
+.result-word { font-size: 1.8rem; font-weight: 700; color: var(--green); margin-bottom: 32px; }
+
+/* Confetti */
+.confetti-piece {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  z-index: 101;
+  animation: confettiFall 2.5s ease-out forwards;
+}
+@keyframes confettiFall {
+  0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}
+
+/* Scrollable content area */
+.scroll-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+/* Bottom fixed area for buttons */
+.bottom-action {
+  padding-top: 16px;
+  flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SETUP SCREEN -->
+  <div id="setup" class="screen active">
+    <div class="emoji-title">🕵️</div>
+    <h1>Imposter!</h1>
+    <h2>Find the fake</h2>
+
+    <div class="scroll-content">
+      <div class="card">
+        <div class="setting-row">
+          <span class="setting-label">Players</span>
+          <div class="stepper">
+            <button id="playerMinus">−</button>
+            <span id="playerCount">4</span>
+            <button id="playerPlus">+</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Show category hint</span>
+          <label class="toggle">
+            <input type="checkbox" id="categoryHint" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Show word hint</span>
+          <label class="toggle">
+            <input type="checkbox" id="wordHint">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div id="categoryGrid" class="category-grid"></div>
+    </div>
+
+    <div class="bottom-action">
+      <button class="btn btn-primary" id="startBtn">Start Game</button>
+    </div>
+  </div>
+
+  <!-- PASS THE PHONE SCREEN -->
+  <div id="reveal" class="screen">
+    <div class="reveal-area" id="revealArea">
+      <div class="player-badge" id="playerBadge">Player 1</div>
+      <div id="revealContent"></div>
+    </div>
+    <div class="bottom-action" id="revealAction"></div>
+  </div>
+
+  <!-- DISCUSSION SCREEN -->
+  <div id="discussion" class="screen">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+      <div class="timer-ring" id="timerRing">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <circle class="track"></circle>
+          <circle class="progress" id="timerProgress"></circle>
+        </svg>
+        <div class="timer-text" id="timerText">60</div>
+      </div>
+      <h1 style="font-size:1.5rem; margin-bottom:12px;">Discussion Time!</h1>
+      <p class="discussion-info">
+        Everyone gives a <strong>one-word clue</strong> about the secret word.<br>
+        The imposter must bluff!<br><br>
+        When ready, vote on who you think the imposter is.
+      </p>
+    </div>
+    <div class="btn-group bottom-action">
+      <button class="btn btn-primary" id="revealImposterBtn">Reveal Imposter</button>
+      <button class="btn btn-outline" id="timerToggleBtn">Pause Timer</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- RESULT OVERLAY -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-emoji">🕵️</div>
+  <div class="result-text">The imposter was</div>
+  <div class="result-player" id="resultPlayer">Player 3</div>
+  <div class="result-word-label">The word was</div>
+  <div class="result-word" id="resultWord">Elephant</div>
+  <div class="btn-group" style="width:100%; max-width:340px;">
+    <button class="btn btn-green" id="newRoundBtn">New Round</button>
+    <button class="btn btn-outline" id="newGameBtn">New Game</button>
+  </div>
+</div>
+
+<script>
+// ── Word Database ──
+const CATEGORIES = {
+  "Animals":      { emoji: "🐾", words: ["Elephant","Tiger","Penguin","Dolphin","Eagle","Kangaroo","Octopus","Giraffe","Chameleon","Panda","Wolf","Shark","Flamingo","Gorilla","Butterfly","Koala","Seahorse","Crocodile"] },
+  "Food & Drinks":{ emoji: "🍕", words: ["Pizza","Sushi","Taco","Burger","Pancake","Smoothie","Croissant","Ramen","Chocolate","Avocado","Pretzel","Espresso","Dumpling","Cheesecake","Burrito","Waffle","Gelato","Boba"] },
+  "Sports":       { emoji: "⚽", words: ["Soccer","Tennis","Surfing","Boxing","Cricket","Archery","Fencing","Rugby","Skiing","Volleyball","Golf","Bowling","Karate","Badminton","Wrestling","Climbing","Cycling","Rowing"] },
+  "Movies & TV":  { emoji: "🎬", words: ["Batman","Frozen","Titanic","Stranger Things","Shrek","Jaws","Friends","Avatar","Matrix","Inception","Simpsons","Jurassic Park","Rocky","Mulan","Squid Game","Minecraft Movie","Wednesday","Deadpool"] },
+  "Music":        { emoji: "🎵", words: ["Guitar","Drums","Piano","Karaoke","Concert","DJ","Violin","Trumpet","Hip-Hop","Opera","Ukulele","Flute","Jazz","Reggae","Saxophone","Choir","Beatbox","Harmonica"] },
+  "Jobs":         { emoji: "💼", words: ["Astronaut","Chef","Detective","Firefighter","Pilot","Surgeon","Teacher","Lifeguard","Mechanic","Veterinarian","Plumber","Architect","Barista","Electrician","Dentist","Farmer","Journalist","Magician"] },
+  "Countries":    { emoji: "🌍", words: ["Japan","Brazil","Egypt","Australia","Iceland","Thailand","Mexico","Norway","India","Canada","Morocco","Greece","Peru","Vietnam","Kenya","Switzerland","Cuba","Argentina"] },
+  "School":       { emoji: "📚", words: ["Homework","Recess","Cafeteria","Detention","Prom","Locker","Principal","Graduation","Field Trip","Science Fair","Yearbook","Assembly","Tutoring","Report Card","Spelling Bee","Backpack","Chalkboard","Library"] },
+  "Technology":   { emoji: "💻", words: ["Bluetooth","Selfie","Hashtag","WiFi","Emoji","Robot","Drone","VR Headset","Podcast","Smartwatch","Password","Screenshot","Charging","Algorithm","Firewall","Hologram","Crypto","ChatGPT"] },
+  "Holidays":     { emoji: "🎉", words: ["Christmas","Halloween","Thanksgiving","Easter","Valentines","New Year","Birthday","Wedding","Carnival","Diwali","Hanukkah","Songkran","Oktoberfest","Mardi Gras","Independence Day","Lunar New Year","Eid","St Patricks Day"] },
+  "Clothing":     { emoji: "👗", words: ["Sneakers","Sunglasses","Hoodie","Bikini","Tuxedo","Sandals","Beanie","Raincoat","Overalls","Scarf","Stilettos","Vest","Flip-Flops","Jumpsuit","Cardigan","Suspenders","Kimono","Crocs"] },
+  "Nature":       { emoji: "🌿", words: ["Volcano","Waterfall","Rainbow","Tornado","Aurora","Desert","Glacier","Coral Reef","Cave","Lightning","Meadow","Canyon","Geyser","Jungle","Tsunami","Blizzard","Tide Pool","Stalactite"] },
+  "Vehicles":     { emoji: "🚗", words: ["Helicopter","Submarine","Skateboard","Ambulance","Sailboat","Motorcycle","Hot Air Balloon","Jet Ski","Scooter","Tractor","Gondola","Segway","Canoe","Fire Truck","Tank","Rickshaw","Hovercraft","Zamboni"] },
+  "Emotions":     { emoji: "😊", words: ["Excited","Nervous","Jealous","Grateful","Confused","Proud","Embarrassed","Hopeful","Furious","Bored","Nostalgic","Anxious","Relieved","Grumpy","Amazed","Lonely","Determined","Awkward"] },
+  "Board Games":  { emoji: "🎲", words: ["Monopoly","Chess","Jenga","Scrabble","Clue","Risk","Battleship","Uno","Pictionary","Twister","Checkers","Sorry","Yahtzee","Trivial Pursuit","Connect Four","Dominoes","Boggle","Operation"] }
+};
+
+// ── Game State ──
+let state = {
+  players: 4,
+  category: "Animals",
+  showCategoryHint: true,
+  showWordHint: false,
+  currentWord: "",
+  imposterIndex: -1,
+  currentPlayer: 0,
+  revealed: false,
+  timerSeconds: 60,
+  timerInterval: null,
+  timerPaused: false
+};
+
+// ── DOM refs ──
+const $ = id => document.getElementById(id);
+
+// ── Init category grid ──
+function buildCategoryGrid() {
+  const grid = $('categoryGrid');
+  grid.innerHTML = '';
+  for (const [name, data] of Object.entries(CATEGORIES)) {
+    const card = document.createElement('div');
+    card.className = 'cat-card' + (name === state.category ? ' selected' : '');
+    card.innerHTML = `<span class="cat-emoji">${data.emoji}</span>${name}`;
+    card.addEventListener('click', () => {
+      state.category = name;
+      grid.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    });
+    grid.appendChild(card);
+  }
+}
+
+// ── Screen navigation ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+// ── Player stepper ──
+$('playerMinus').addEventListener('click', () => {
+  if (state.players > 3) {
+    state.players--;
+    $('playerCount').textContent = state.players;
+  }
+});
+$('playerPlus').addEventListener('click', () => {
+  if (state.players < 12) {
+    state.players++;
+    $('playerCount').textContent = state.players;
+  }
+});
+
+// ── Start Game ──
+$('startBtn').addEventListener('click', () => {
+  state.showCategoryHint = $('categoryHint').checked;
+  state.showWordHint = $('wordHint').checked;
+  startRound();
+});
+
+function startRound() {
+  const words = CATEGORIES[state.category].words;
+  state.currentWord = words[Math.floor(Math.random() * words.length)];
+  state.imposterIndex = Math.floor(Math.random() * state.players);
+  state.currentPlayer = 0;
+  state.revealed = false;
+  showPlayerScreen();
+}
+
+// ── Pass-the-Phone ──
+function showPlayerScreen() {
+  showScreen('reveal');
+  state.revealed = false;
+  $('playerBadge').textContent = `Player ${state.currentPlayer + 1}`;
+
+  // Show tap prompt
+  $('revealContent').innerHTML = `
+    <div style="font-size:4rem; margin-bottom:16px;">🤫</div>
+    <div class="tap-prompt">Tap to reveal your role</div>
+  `;
+  $('revealAction').innerHTML = '';
+
+  // Make the reveal area tappable
+  $('revealArea').onclick = () => {
+    if (state.revealed) return;
+    state.revealed = true;
+    revealRole();
+  };
+}
+
+function revealRole() {
+  const isImposter = state.currentPlayer === state.imposterIndex;
+  $('revealArea').onclick = null;
+
+  if (isImposter) {
+    let hints = '';
+    if (state.showCategoryHint) {
+      hints += `<div class="hint-text">Category: ${state.category}</div>`;
+    }
+    if (state.showWordHint) {
+      const wordHint = state.currentWord[0] + '_'.repeat(state.currentWord.length - 1);
+      hints += `<div class="hint-text">Hint: ${wordHint}</div>`;
+    }
+    $('revealContent').innerHTML = `
+      <div class="role-card imposter">
+        <div style="font-size:3rem; margin-bottom:8px;">🕵️</div>
+        <div class="role-label red">You are the IMPOSTER!</div>
+        <div style="color:var(--text-dim); font-size:0.95rem;">Try to blend in...</div>
+        ${hints}
+      </div>
+    `;
+  } else {
+    $('revealContent').innerHTML = `
+      <div class="role-card normal">
+        <div style="font-size:3rem; margin-bottom:8px;">✅</div>
+        <div class="role-label green">You're safe!</div>
+        <div class="secret-word">${state.currentWord}</div>
+        <div style="color:var(--text-dim); font-size:0.85rem;">Category: ${state.category}</div>
+      </div>
+    `;
+  }
+
+  const isLast = state.currentPlayer >= state.players - 1;
+  $('revealAction').innerHTML = `
+    <button class="btn ${isLast ? 'btn-primary' : 'btn-green'}" id="nextPlayerBtn">
+      ${isLast ? 'Start Discussion' : 'Pass to Next Player'}
+    </button>
+  `;
+  $('nextPlayerBtn').addEventListener('click', () => {
+    if (isLast) {
+      startDiscussion();
+    } else {
+      state.currentPlayer++;
+      showPlayerScreen();
+    }
+  });
+}
+
+// ── Discussion ──
+function startDiscussion() {
+  showScreen('discussion');
+  state.timerSeconds = 60;
+  state.timerPaused = false;
+  $('timerToggleBtn').textContent = 'Pause Timer';
+
+  const circumference = 2 * Math.PI * 44;
+  $('timerProgress').style.strokeDasharray = circumference;
+  $('timerProgress').style.strokeDashoffset = 0;
+  $('timerText').textContent = '60';
+
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    if (state.timerPaused) return;
+    state.timerSeconds--;
+    if (state.timerSeconds < 0) {
+      clearInterval(state.timerInterval);
+      state.timerSeconds = 0;
+    }
+    $('timerText').textContent = state.timerSeconds;
+    const offset = circumference * (1 - state.timerSeconds / 60);
+    $('timerProgress').style.strokeDashoffset = offset;
+  }, 1000);
+}
+
+$('timerToggleBtn').addEventListener('click', () => {
+  state.timerPaused = !state.timerPaused;
+  $('timerToggleBtn').textContent = state.timerPaused ? 'Resume Timer' : 'Pause Timer';
+});
+
+$('revealImposterBtn').addEventListener('click', () => {
+  clearInterval(state.timerInterval);
+  showResult();
+});
+
+// ── Result ──
+function showResult() {
+  $('resultPlayer').textContent = `Player ${state.imposterIndex + 1}`;
+  $('resultWord').textContent = state.currentWord;
+  $('resultOverlay').classList.add('active');
+  spawnConfetti();
+}
+
+$('newRoundBtn').addEventListener('click', () => {
+  $('resultOverlay').classList.remove('active');
+  startRound();
+});
+
+$('newGameBtn').addEventListener('click', () => {
+  $('resultOverlay').classList.remove('active');
+  showScreen('setup');
+});
+
+// ── Confetti ──
+function spawnConfetti() {
+  const colors = ['#e94560','#2ecc71','#f39c12','#3498db','#9b59b6','#1abc9c','#e74c3c','#f1c40f'];
+  for (let i = 0; i < 60; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.top = -10 + 'px';
+    el.style.background = colors[Math.floor(Math.random() * colors.length)];
+    el.style.animationDelay = (Math.random() * 0.8) + 's';
+    el.style.animationDuration = (1.5 + Math.random() * 1.5) + 's';
+    el.style.width = (6 + Math.random() * 8) + 'px';
+    el.style.height = (6 + Math.random() * 8) + 'px';
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+// ── Service Worker (inline, for offline PWA) ──
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'imposter-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+}
+
+// ── Boot ──
+buildCategoryGrid();
+</script>
+</body>
+</html>
