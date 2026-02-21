@@ -245,31 +245,6 @@ h2 { font-size: 1.4rem; text-align: center; color: var(--text-dim); margin-botto
 .hint-text { color: var(--text-dim); font-size: 0.95rem; margin-top: 8px; }
 
 /* Discussion screen */
-.timer-ring {
-  width: 100px;
-  height: 100px;
-  margin: 0 auto 16px;
-  position: relative;
-}
-.timer-ring svg { transform: rotate(-90deg); }
-.timer-ring circle {
-  fill: none;
-  stroke-width: 6;
-  cx: 50;
-  cy: 50;
-  r: 44;
-}
-.timer-ring .track { stroke: rgba(255,255,255,0.1); }
-.timer-ring .progress { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
-.timer-text {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 700;
-}
 .discussion-info {
   text-align: center;
   font-size: 1rem;
@@ -388,23 +363,16 @@ h2 { font-size: 1.4rem; text-align: center; color: var(--text-dim); margin-botto
   <!-- DISCUSSION SCREEN -->
   <div id="discussion" class="screen">
     <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-      <div class="timer-ring" id="timerRing">
-        <svg width="100" height="100" viewBox="0 0 100 100">
-          <circle class="track"></circle>
-          <circle class="progress" id="timerProgress"></circle>
-        </svg>
-        <div class="timer-text" id="timerText">60</div>
-      </div>
+      <div style="font-size:4rem; margin-bottom:16px;">🗣️</div>
       <h1 style="font-size:1.5rem; margin-bottom:12px;">Discussion Time!</h1>
       <p class="discussion-info">
-        Everyone gives a <strong>one-word clue</strong> about the secret word.<br>
-        The imposter must bluff!<br><br>
-        When ready, vote on who you think the imposter is.
+        Go around the group — everyone says a <strong>one-word clue</strong> about the secret word.<br><br>
+        Do 2-3 rounds, then vote on who you think the imposter is!
       </p>
     </div>
     <div class="btn-group bottom-action">
       <button class="btn btn-primary" id="revealImposterBtn">Reveal Imposter</button>
-      <button class="btn btn-outline" id="timerToggleBtn">Pause Timer</button>
+      <button class="btn btn-outline" id="menuFromDiscussionBtn">Back to Menu</button>
     </div>
   </div>
 
@@ -425,30 +393,105 @@ h2 { font-size: 1.4rem; text-align: center; color: var(--text-dim); margin-botto
 </div>
 
 <script>
-// ── Word Database ──
+// ── Word Database (each word has a related hint clue) ──
 const CATEGORIES = {
-  "Animals":      { emoji: "🐾", words: ["Elephant","Tiger","Penguin","Dolphin","Eagle","Kangaroo","Octopus","Giraffe","Chameleon","Panda","Wolf","Shark","Flamingo","Gorilla","Butterfly","Koala","Seahorse","Crocodile"] },
-  "Food & Drinks":{ emoji: "🍕", words: ["Pizza","Sushi","Taco","Burger","Pancake","Smoothie","Croissant","Ramen","Chocolate","Avocado","Pretzel","Espresso","Dumpling","Cheesecake","Burrito","Waffle","Gelato","Boba"] },
-  "Sports":       { emoji: "⚽", words: ["Soccer","Tennis","Surfing","Boxing","Cricket","Archery","Fencing","Rugby","Skiing","Volleyball","Golf","Bowling","Karate","Badminton","Wrestling","Climbing","Cycling","Rowing"] },
-  "Movies & TV":  { emoji: "🎬", words: ["Batman","Frozen","Titanic","Stranger Things","Shrek","Jaws","Friends","Avatar","Matrix","Inception","Simpsons","Jurassic Park","Rocky","Mulan","Squid Game","Minecraft Movie","Wednesday","Deadpool"] },
-  "Music":        { emoji: "🎵", words: ["Guitar","Drums","Piano","Karaoke","Concert","DJ","Violin","Trumpet","Hip-Hop","Opera","Ukulele","Flute","Jazz","Reggae","Saxophone","Choir","Beatbox","Harmonica"] },
-  "Jobs":         { emoji: "💼", words: ["Astronaut","Chef","Detective","Firefighter","Pilot","Surgeon","Teacher","Lifeguard","Mechanic","Veterinarian","Plumber","Architect","Barista","Electrician","Dentist","Farmer","Journalist","Magician"] },
-  "Countries":    { emoji: "🌍", words: ["Japan","Brazil","Egypt","Australia","Iceland","Thailand","Mexico","Norway","India","Canada","Morocco","Greece","Peru","Vietnam","Kenya","Switzerland","Cuba","Argentina"] },
-  "School":       { emoji: "📚", words: ["Homework","Recess","Cafeteria","Detention","Prom","Locker","Principal","Graduation","Field Trip","Science Fair","Yearbook","Assembly","Tutoring","Report Card","Spelling Bee","Backpack","Chalkboard","Library"] },
-  "Technology":   { emoji: "💻", words: ["Bluetooth","Selfie","Hashtag","WiFi","Emoji","Robot","Drone","VR Headset","Podcast","Smartwatch","Password","Screenshot","Charging","Algorithm","Firewall","Hologram","Crypto","ChatGPT"] },
-  "Holidays":     { emoji: "🎉", words: ["Christmas","Halloween","Thanksgiving","Easter","Valentines","New Year","Birthday","Wedding","Carnival","Diwali","Hanukkah","Songkran","Oktoberfest","Mardi Gras","Independence Day","Lunar New Year","Eid","St Patricks Day"] },
-  "Clothing":     { emoji: "👗", words: ["Sneakers","Sunglasses","Hoodie","Bikini","Tuxedo","Sandals","Beanie","Raincoat","Overalls","Scarf","Stilettos","Vest","Flip-Flops","Jumpsuit","Cardigan","Suspenders","Kimono","Crocs"] },
-  "Nature":       { emoji: "🌿", words: ["Volcano","Waterfall","Rainbow","Tornado","Aurora","Desert","Glacier","Coral Reef","Cave","Lightning","Meadow","Canyon","Geyser","Jungle","Tsunami","Blizzard","Tide Pool","Stalactite"] },
-  "Vehicles":     { emoji: "🚗", words: ["Helicopter","Submarine","Skateboard","Ambulance","Sailboat","Motorcycle","Hot Air Balloon","Jet Ski","Scooter","Tractor","Gondola","Segway","Canoe","Fire Truck","Tank","Rickshaw","Hovercraft","Zamboni"] },
-  "Emotions":     { emoji: "😊", words: ["Excited","Nervous","Jealous","Grateful","Confused","Proud","Embarrassed","Hopeful","Furious","Bored","Nostalgic","Anxious","Relieved","Grumpy","Amazed","Lonely","Determined","Awkward"] },
-  "Board Games":  { emoji: "🎲", words: ["Monopoly","Chess","Jenga","Scrabble","Clue","Risk","Battleship","Uno","Pictionary","Twister","Checkers","Sorry","Yahtzee","Trivial Pursuit","Connect Four","Dominoes","Boggle","Operation"] }
+  "Animals": { emoji: "🐾", words: [
+    ["Elephant","Trunk"],["Tiger","Stripes"],["Penguin","Tuxedo"],["Dolphin","Flipper"],["Eagle","Freedom"],
+    ["Kangaroo","Pouch"],["Octopus","Tentacles"],["Giraffe","Neck"],["Chameleon","Camouflage"],["Panda","Bamboo"],
+    ["Wolf","Howl"],["Shark","Jaws"],["Flamingo","Pink"],["Gorilla","Chest"],["Butterfly","Cocoon"],
+    ["Koala","Eucalyptus"],["Seahorse","Ocean"],["Crocodile","Swamp"]
+  ]},
+  "Food & Drinks": { emoji: "🍕", words: [
+    ["Pizza","Italy"],["Sushi","Chopsticks"],["Taco","Mexico"],["Burger","Bun"],["Pancake","Syrup"],
+    ["Smoothie","Blender"],["Croissant","Paris"],["Ramen","Noodles"],["Chocolate","Cocoa"],["Avocado","Toast"],
+    ["Pretzel","Twisted"],["Espresso","Caffeine"],["Dumpling","Steamed"],["Cheesecake","Crust"],["Burrito","Wrapped"],
+    ["Waffle","Grid"],["Gelato","Scoop"],["Boba","Tapioca"]
+  ]},
+  "Sports": { emoji: "⚽", words: [
+    ["Soccer","Goal"],["Tennis","Racket"],["Surfing","Waves"],["Boxing","Gloves"],["Cricket","Wicket"],
+    ["Archery","Bullseye"],["Fencing","Sword"],["Rugby","Tackle"],["Skiing","Snow"],["Volleyball","Net"],
+    ["Golf","Hole"],["Bowling","Pins"],["Karate","Belt"],["Badminton","Shuttlecock"],["Wrestling","Mat"],
+    ["Climbing","Rope"],["Cycling","Pedal"],["Rowing","Oar"]
+  ]},
+  "Movies & TV": { emoji: "🎬", words: [
+    ["Batman","Gotham"],["Frozen","Snowflake"],["Titanic","Iceberg"],["Stranger Things","Upside Down"],["Shrek","Ogre"],
+    ["Jaws","Beach"],["Friends","Couch"],["Avatar","Blue"],["Matrix","Pill"],["Inception","Dream"],
+    ["Simpsons","Yellow"],["Jurassic Park","Dinosaur"],["Rocky","Boxing"],["Mulan","Warrior"],["Squid Game","Doll"],
+    ["Minecraft Movie","Blocks"],["Wednesday","Addams"],["Deadpool","Chimichanga"]
+  ]},
+  "Music": { emoji: "🎵", words: [
+    ["Guitar","Strings"],["Drums","Sticks"],["Piano","Keys"],["Karaoke","Microphone"],["Concert","Stage"],
+    ["DJ","Turntable"],["Violin","Bow"],["Trumpet","Brass"],["Hip-Hop","Beats"],["Opera","Soprano"],
+    ["Ukulele","Hawaii"],["Flute","Wind"],["Jazz","Improvise"],["Reggae","Jamaica"],["Saxophone","Smooth"],
+    ["Choir","Harmony"],["Beatbox","Mouth"],["Harmonica","Blues"]
+  ]},
+  "Jobs": { emoji: "💼", words: [
+    ["Astronaut","Space"],["Chef","Kitchen"],["Detective","Clues"],["Firefighter","Hose"],["Pilot","Cockpit"],
+    ["Surgeon","Scalpel"],["Teacher","Classroom"],["Lifeguard","Whistle"],["Mechanic","Wrench"],["Veterinarian","Pets"],
+    ["Plumber","Pipes"],["Architect","Blueprint"],["Barista","Latte"],["Electrician","Wiring"],["Dentist","Teeth"],
+    ["Farmer","Harvest"],["Journalist","Headlines"],["Magician","Wand"]
+  ]},
+  "Countries": { emoji: "🌍", words: [
+    ["Japan","Sushi"],["Brazil","Carnival"],["Egypt","Pyramids"],["Australia","Kangaroo"],["Iceland","Geyser"],
+    ["Thailand","Temple"],["Mexico","Sombrero"],["Norway","Fjord"],["India","Curry"],["Canada","Maple"],
+    ["Morocco","Bazaar"],["Greece","Acropolis"],["Peru","Machu Picchu"],["Vietnam","Pho"],["Kenya","Safari"],
+    ["Switzerland","Chocolate"],["Cuba","Cigar"],["Argentina","Tango"]
+  ]},
+  "School": { emoji: "📚", words: [
+    ["Homework","Deadline"],["Recess","Playground"],["Cafeteria","Lunch"],["Detention","Trouble"],["Prom","Dance"],
+    ["Locker","Combination"],["Principal","Office"],["Graduation","Cap"],["Field Trip","Bus"],["Science Fair","Volcano"],
+    ["Yearbook","Photos"],["Assembly","Auditorium"],["Tutoring","Help"],["Report Card","Grades"],["Spelling Bee","Letters"],
+    ["Backpack","Zipper"],["Chalkboard","Eraser"],["Library","Quiet"]
+  ]},
+  "Technology": { emoji: "💻", words: [
+    ["Bluetooth","Wireless"],["Selfie","Camera"],["Hashtag","Trending"],["WiFi","Signal"],["Emoji","Smiley"],
+    ["Robot","Metal"],["Drone","Flying"],["VR Headset","Virtual"],["Podcast","Episode"],["Smartwatch","Wrist"],
+    ["Password","Secret"],["Screenshot","Capture"],["Charging","Battery"],["Algorithm","Pattern"],["Firewall","Security"],
+    ["Hologram","Projection"],["Crypto","Bitcoin"],["ChatGPT","AI"]
+  ]},
+  "Holidays": { emoji: "🎉", words: [
+    ["Christmas","Reindeer"],["Halloween","Pumpkin"],["Thanksgiving","Turkey"],["Easter","Bunny"],["Valentines","Heart"],
+    ["New Year","Midnight"],["Birthday","Candles"],["Wedding","Ring"],["Carnival","Mask"],["Diwali","Lantern"],
+    ["Hanukkah","Menorah"],["Songkran","Splash"],["Oktoberfest","Beer"],["Mardi Gras","Beads"],["Independence Day","Fireworks"],
+    ["Lunar New Year","Dragon"],["Eid","Feast"],["St Patricks Day","Clover"]
+  ]},
+  "Clothing": { emoji: "👗", words: [
+    ["Sneakers","Laces"],["Sunglasses","Shade"],["Hoodie","Hood"],["Bikini","Beach"],["Tuxedo","Formal"],
+    ["Sandals","Summer"],["Beanie","Warm"],["Raincoat","Umbrella"],["Overalls","Farmer"],["Scarf","Winter"],
+    ["Stilettos","Heel"],["Vest","Layer"],["Flip-Flops","Thong"],["Jumpsuit","Onesie"],["Cardigan","Button"],
+    ["Suspenders","Clip"],["Kimono","Japan"],["Crocs","Holes"]
+  ]},
+  "Nature": { emoji: "🌿", words: [
+    ["Volcano","Lava"],["Waterfall","Cliff"],["Rainbow","Rain"],["Tornado","Funnel"],["Aurora","Northern"],
+    ["Desert","Sand"],["Glacier","Ice"],["Coral Reef","Tropical"],["Cave","Dark"],["Lightning","Thunder"],
+    ["Meadow","Flowers"],["Canyon","Grand"],["Geyser","Steam"],["Jungle","Vines"],["Tsunami","Wave"],
+    ["Blizzard","Frozen"],["Tide Pool","Starfish"],["Stalactite","Dripping"]
+  ]},
+  "Vehicles": { emoji: "🚗", words: [
+    ["Helicopter","Blade"],["Submarine","Underwater"],["Skateboard","Kickflip"],["Ambulance","Siren"],["Sailboat","Wind"],
+    ["Motorcycle","Helmet"],["Hot Air Balloon","Basket"],["Jet Ski","Splash"],["Scooter","Kick"],["Tractor","Farm"],
+    ["Gondola","Venice"],["Segway","Balance"],["Canoe","Paddle"],["Fire Truck","Ladder"],["Tank","Armor"],
+    ["Rickshaw","Pedal"],["Hovercraft","Cushion"],["Zamboni","Ice"]
+  ]},
+  "Emotions": { emoji: "😊", words: [
+    ["Excited","Butterflies"],["Nervous","Sweating"],["Jealous","Green"],["Grateful","Thankful"],["Confused","Lost"],
+    ["Proud","Achievement"],["Embarrassed","Blush"],["Hopeful","Wish"],["Furious","Rage"],["Bored","Yawn"],
+    ["Nostalgic","Memories"],["Anxious","Worry"],["Relieved","Phew"],["Grumpy","Morning"],["Amazed","Wow"],
+    ["Lonely","Solo"],["Determined","Focused"],["Awkward","Cringe"]
+  ]},
+  "Board Games": { emoji: "🎲", words: [
+    ["Monopoly","Money"],["Chess","Checkmate"],["Jenga","Tower"],["Scrabble","Letters"],["Clue","Murder"],
+    ["Risk","Conquest"],["Battleship","Sink"],["Uno","Reverse"],["Pictionary","Drawing"],["Twister","Dots"],
+    ["Checkers","Jump"],["Sorry","Slide"],["Yahtzee","Dice"],["Trivial Pursuit","Questions"],["Connect Four","Drops"],
+    ["Dominoes","Tiles"],["Boggle","Shake"],["Operation","Buzzer"]
+  ]}
 };
 
 // ── Build flat word list with category references ──
 const ALL_WORDS = [];
 for (const [name, data] of Object.entries(CATEGORIES)) {
-  for (const word of data.words) {
-    ALL_WORDS.push({ word, category: name, emoji: data.emoji });
+  for (const [word, hint] of data.words) {
+    ALL_WORDS.push({ word, hint, category: name, emoji: data.emoji });
   }
 }
 
@@ -463,12 +506,10 @@ let state = {
   showCategoryHint: true,
   showWordHint: false,
   currentWord: "",
+  currentHint: "",
   imposterIndex: -1,
   currentPlayer: 0,
-  revealed: false,
-  timerSeconds: 60,
-  timerInterval: null,
-  timerPaused: false
+  revealed: false
 };
 
 // ── DOM refs ──
@@ -554,6 +595,7 @@ function startRound() {
   const pool = ALL_WORDS.filter(w => selectedCategories.has(w.category));
   const pick = pool[Math.floor(Math.random() * pool.length)];
   state.currentWord = pick.word;
+  state.currentHint = pick.hint;
   state.category = pick.category;
   state.categoryEmoji = pick.emoji;
   state.imposterIndex = Math.floor(Math.random() * state.players);
@@ -593,8 +635,7 @@ function revealRole() {
       hints += `<div class="hint-text">Category: ${state.category}</div>`;
     }
     if (state.showWordHint) {
-      const wordHint = state.currentWord[0] + '_'.repeat(state.currentWord.length - 1);
-      hints += `<div class="hint-text">Hint: ${wordHint}</div>`;
+      hints += `<div class="hint-text">Hint: ${state.currentHint}</div>`;
     }
     $('revealContent').innerHTML = `
       <div class="role-card imposter">
@@ -634,38 +675,11 @@ function revealRole() {
 // ── Discussion ──
 function startDiscussion() {
   showScreen('discussion');
-  state.timerSeconds = 60;
-  state.timerPaused = false;
-  $('timerToggleBtn').textContent = 'Pause Timer';
-
-  const circumference = 2 * Math.PI * 44;
-  $('timerProgress').style.strokeDasharray = circumference;
-  $('timerProgress').style.strokeDashoffset = 0;
-  $('timerText').textContent = '60';
-
-  clearInterval(state.timerInterval);
-  state.timerInterval = setInterval(() => {
-    if (state.timerPaused) return;
-    state.timerSeconds--;
-    if (state.timerSeconds < 0) {
-      clearInterval(state.timerInterval);
-      state.timerSeconds = 0;
-    }
-    $('timerText').textContent = state.timerSeconds;
-    const offset = circumference * (1 - state.timerSeconds / 60);
-    $('timerProgress').style.strokeDashoffset = offset;
-  }, 1000);
 }
 
-$('timerToggleBtn').addEventListener('click', () => {
-  state.timerPaused = !state.timerPaused;
-  $('timerToggleBtn').textContent = state.timerPaused ? 'Resume Timer' : 'Pause Timer';
-});
+$('revealImposterBtn').addEventListener('click', () => showResult());
 
-$('revealImposterBtn').addEventListener('click', () => {
-  clearInterval(state.timerInterval);
-  showResult();
-});
+$('menuFromDiscussionBtn').addEventListener('click', () => showScreen('setup'));
 
 // ── Result ──
 function showResult() {
