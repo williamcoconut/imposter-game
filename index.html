@@ -128,6 +128,48 @@ h2 { font-size: 1.4rem; text-align: center; color: var(--text-dim); margin-botto
 .stepper button:active { background: var(--accent); color: #fff; }
 .stepper span { font-size: 1.3rem; font-weight: 700; min-width: 28px; text-align: center; }
 
+/* Category grid */
+.cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.cat-header span { font-size: 0.95rem; font-weight: 600; }
+.cat-header button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px;
+}
+.cat-card {
+  background: var(--card);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, opacity 0.2s;
+  font-size: 0.8rem;
+  opacity: 0.45;
+}
+.cat-card .cat-emoji { font-size: 1.4rem; display: block; margin-bottom: 2px; }
+.cat-card.selected { border-color: var(--green); opacity: 1; }
+.cat-card:active { transform: scale(0.95); }
+
 /* Toggle switch */
 .toggle {
   position: relative;
@@ -322,9 +364,11 @@ h2 { font-size: 1.4rem; text-align: center; color: var(--text-dim); margin-botto
         </div>
       </div>
 
-      <div style="text-align:center; color:var(--text-dim); font-size:0.9rem; margin-top:8px;">
-        Words from all 15 categories — anything goes!
+      <div class="cat-header">
+        <span>Categories</span>
+        <button id="catToggleAll">Deselect All</button>
       </div>
+      <div id="categoryGrid" class="category-grid"></div>
     </div>
 
     <div class="bottom-action">
@@ -408,6 +452,9 @@ for (const [name, data] of Object.entries(CATEGORIES)) {
   }
 }
 
+// ── Selected categories (all on by default) ──
+const selectedCategories = new Set(Object.keys(CATEGORIES));
+
 // ── Game State ──
 let state = {
   players: 4,
@@ -426,6 +473,48 @@ let state = {
 
 // ── DOM refs ──
 const $ = id => document.getElementById(id);
+
+// ── Build category grid ──
+function buildCategoryGrid() {
+  const grid = $('categoryGrid');
+  grid.innerHTML = '';
+  for (const [name, data] of Object.entries(CATEGORIES)) {
+    const card = document.createElement('div');
+    card.className = 'cat-card' + (selectedCategories.has(name) ? ' selected' : '');
+    card.dataset.cat = name;
+    card.innerHTML = `<span class="cat-emoji">${data.emoji}</span>${name}`;
+    card.addEventListener('click', () => {
+      if (selectedCategories.has(name)) {
+        selectedCategories.delete(name);
+        card.classList.remove('selected');
+      } else {
+        selectedCategories.add(name);
+        card.classList.add('selected');
+      }
+      updateToggleLabel();
+    });
+    grid.appendChild(card);
+  }
+}
+
+function updateToggleLabel() {
+  const total = Object.keys(CATEGORIES).length;
+  $('catToggleAll').textContent = selectedCategories.size === total ? 'Deselect All' : 'Select All';
+}
+
+$('catToggleAll').addEventListener('click', () => {
+  const total = Object.keys(CATEGORIES).length;
+  const allSelected = selectedCategories.size === total;
+  const cards = $('categoryGrid').querySelectorAll('.cat-card');
+  if (allSelected) {
+    selectedCategories.clear();
+    cards.forEach(c => c.classList.remove('selected'));
+  } else {
+    Object.keys(CATEGORIES).forEach(k => selectedCategories.add(k));
+    cards.forEach(c => c.classList.add('selected'));
+  }
+  updateToggleLabel();
+});
 
 // ── Screen navigation ──
 function showScreen(id) {
@@ -449,13 +538,21 @@ $('playerPlus').addEventListener('click', () => {
 
 // ── Start Game ──
 $('startBtn').addEventListener('click', () => {
+  if (selectedCategories.size === 0) {
+    // Flash the toggle button to hint they need to pick at least one
+    $('catToggleAll').style.color = '#f39c12';
+    $('catToggleAll').textContent = 'Pick at least one!';
+    setTimeout(() => { $('catToggleAll').style.color = ''; updateToggleLabel(); }, 1500);
+    return;
+  }
   state.showCategoryHint = $('categoryHint').checked;
   state.showWordHint = $('wordHint').checked;
   startRound();
 });
 
 function startRound() {
-  const pick = ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)];
+  const pool = ALL_WORDS.filter(w => selectedCategories.has(w.category));
+  const pick = pool[Math.floor(Math.random() * pool.length)];
   state.currentWord = pick.word;
   state.category = pick.category;
   state.categoryEmoji = pick.emoji;
@@ -628,6 +725,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Boot ──
+buildCategoryGrid();
 </script>
 </body>
 </html>
